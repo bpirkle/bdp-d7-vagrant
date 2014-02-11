@@ -32,15 +32,15 @@ while getopts "h" OPTION
 # The vagrant box will call back out to the host on port 9000.  IDE configuration may
 # be necessary, and will vary with IDE.  On PHPStorm, the following worked:
 #   1) create a PHP Remote Debug configuration
-#   2) set the ide key (session id) to "bdp"
+#   2) set the ide key (session id) to "kcm"
 #   3) create a server (I named my Vagrant Box) with settings:
 #        Host:  localhost
 #        Port:  9000
 #        Debugger:  XDebug
-#        Path mappings:  <my host bdp-d7 git root> => /var/www/html/bdp-d7
+#        Path mappings:  <my d7.kcm.org git root> => /var/www/html/d7.kcm.org
 #   4) click the "telephone" icon in the toolbar (to make PHPStorm listen for incoming connections)
 #   5) load the site in your browser via this url:  
-#         http://localhost:8888?XDEBUG_SESSION_START=bdp
+#         http://localhost:8080?XDEBUG_SESSION_START=kcm
 #  
 #   WARNING!  BEWARE!  DANGER!  Sending the parameter to start debugging will kick off
 #   xdebug on the server (Vagrant box) side, and everything will seem fine.  But the 
@@ -69,20 +69,36 @@ while getopts "h" OPTION
 # install packages
 sudo pecl install xdebug
 
+# update php configuration
 sudo tee /etc/php.d/xdebug.ini <<EOF
 zend_extension = /usr/lib64/php/modules/xdebug.so
 xdebug.remote_enable=1
 xdebug.remote_autostart=0
-xdebug.idekey="bdp"
+xdebug.idekey="kcm"
 xdebug.remote_connect_back=1
 xdebug.remote_port=9000
 xdebug.remote_mode=req
 xdebug.remote_log="/tmp/xdebug.log"
+xdebug.profiler_enable=0
+xdebug.profiler_enable_trigger=1
+xdebug.profiler_output_dir=/tmp
 EOF
+
+# webgrind (browser-based profiler file analysis)
+sudo tar zxf /vagrant/data/config_files/webgrind.tar.gz -C /var/www/html
+
+# update httpd.conf (for webgrind)
+# This is ugly because of the necessary escaping, but it replaces 
+#   Alias /icons/ "/var/www/icons/"
+# with
+#   Alias /webgrind/ "/var/www/html/webgrind/"
+#   Alias /icons/ "/var/www/icons/"
+# to make webgrind accessible at http://localhost:8080/webgrind/index.php 
+sudo sed -i 's/Alias \/icons\/ "\/var\/www\/icons\/"/Alias \/icons\/ "\/var\/www\/icons\/"\nAlias \/webgrind\/ "\/var\/www\/html\/webgrind\/"/g' /etc/httpd/conf/httpd.conf
 
 sudo service httpd restart
 
-# You'll also need to configure your IDE for remote debuggin.
+# You'll also need to configure your IDE for remote debugging.
 # Instructions for PHPStorm are here:  http://www.jetbrains.com/phpstorm/webhelp/run-debug-configuration-php-remote-debug.html
 
 exit

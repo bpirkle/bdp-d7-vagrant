@@ -1,0 +1,10 @@
+#!/bin/bash
+# Argument = -h HELP
+
+# For fixing the MySQL lock error that commonly after a Vagrant box dies unexpectedly.
+# Just do "vagrant ssh" to log in to your Vagrant box, then "mysql-lock-fix" to run this script.
+# Credit for this fix goes to Elvis McNeely
+sudo mv /var/lib/mysql/mysql.sock /var/lib/mysql/mysql.sock.bak
+sudo service mysqld start
+
+exit
